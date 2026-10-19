@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lecture Lens</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+</head>
+<body>
+  <!-- ============ Step 1: ask for the subject ============ -->
+  <main id="setup" class="setup">
+    <form id="setup-form" class="setup-card">
+      <h1>Lecture Lens</h1>
+      <p class="muted">Live transcript of your class, with graphs, diagrams and examples beside it.</p>
+
+      <label for="subject">What subject is this class? <span class="req">*</span></label>
+      <input id="subject" required placeholder="e.g. COEN 243 – C++ programming, Calculus I, Physics" autocomplete="off">
+
+      <label for="topic">Today's topic <span class="muted">(optional)</span></label>
+      <input id="topic" placeholder="e.g. Pointers and arrays" autocomplete="off">
+
+      <label for="keyterms">Words the teacher will use <span class="muted">(optional, comma-separated)</span></label>
+      <input id="keyterms" placeholder="e.g. pointer, dereference, nullptr, linked list" autocomplete="off">
+      <p class="hint">Helps recognise technical words, and each one gets an explanation card when it comes up.</p>
+
+      <label for="language">Teacher's language / accent</label>
+      <select id="language">
+        <option value="en-US">English – American</option>
+        <option value="en-CA">English – Canadian</option>
+        <option value="en-GB">English – British</option>
+        <option value="en-IN">English – Indian</option>
+        <option value="en-NG">English – Nigerian</option>
+        <option value="en-KE">English – Kenyan</option>
+        <option value="en-ZA">English – South African</option>
+        <option value="en-AU">English – Australian</option>
+        <option value="en-IE">English – Irish</option>
+        <option value="en-PH">English – Filipino</option>
+        <option value="en-SG">English – Singaporean</option>
+        <option value="fr-CA">Français – Canada</option>
+        <option value="fr-FR">Français – France</option>
+        <option value="es-ES">Español – España</option>
+        <option value="es-MX">Español – México</option>
+        <option value="ar-SA">العربية</option>
+        <option value="zh-CN">中文（普通话）</option>
+        <option value="hi-IN">हिन्दी</option>
+        <option value="pt-BR">Português – Brasil</option>
+        <option value="de-DE">Deutsch</option>
+        <option value="it-IT">Italiano</option>
+      </select>
+      <p class="hint">Choosing the accent closest to your teacher's improves accuracy.</p>
+
+      <fieldset>
+        <legend>Transcription</legend>
+        <label class="radio"><input type="radio" name="stt" value="browser" checked>
+          <span><strong>Free</strong> – built into the browser (Chrome / Edge)</span></label>
+        <label class="radio"><input type="radio" name="stt" value="scribe" disabled>
+          <span><strong>ElevenLabs Scribe</strong> – best with accents <span class="tag">paid · off</span></span></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Visual aids</legend>
+        <label class="radio"><input type="radio" name="vis" value="free" checked>
+          <span><strong>Free</strong> – built-in graphs &amp; diagrams + Wikipedia</span></label>
+        <label class="radio"><input type="radio" name="vis" value="claude" disabled>
+          <span><strong>Claude AI</strong> – custom graphs &amp; examples for anything <span class="tag">paid · off</span></span></label>
+      </fieldset>
+
+      <p id="setup-warning" class="warning" hidden></p>
+      <button type="submit" class="primary">Start listening</button>
+    </form>
+  </main>
+
+  <!-- ============ Step 2: live session ============ -->
+  <div id="session" class="session" hidden>
+    <header class="topbar">
+      <div class="topbar-title">
+        <span id="status-dot" class="dot"></span>
+        <strong id="session-subject"></strong>
+        <span id="status-text" class="muted"></span>
+      </div>
+      <div class="topbar-actions">
+        <button id="mic-btn" type="button">Pause</button>
+        <button id="popout-btn" type="button" title="Open the visual aids on a separate page (e.g. a second screen)">Open visuals page ↗</button>
+        <button id="download-btn" type="button">Download transcript</button>
+        <button id="new-btn" type="button">New class</button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Panels">
+      <button type="button" data-tab="transcript" class="active">Transcript</button>
+      <button type="button" data-tab="visuals">Visual aids <span id="card-count" class="badge">0</span></button>
+    </nav>
+
+    <main id="panels" class="panels show-transcript">
+      <section class="panel transcript-panel" aria-label="Transcript">
+        <h2>Transcript</h2>
+        <div id="transcript" class="transcript" aria-live="polite">
+          <p id="transcript-empty" class="muted">Waiting for the teacher to speak…</p>
+        </div>
+        <p id="partial" class="partial"></p>
+      </section>
+
+      <section class="panel visuals-panel" aria-label="Visual aids">
+        <h2>Visual aids</h2>
+        <form id="lookup-form" class="lookup">
+          <input id="lookup-input" placeholder="Look up a term (e.g. recursion)" autocomplete="off">
+          <button type="submit">Look up</button>
+        </form>
+        <p id="visual-status" class="muted small"></p>
+        <div id="cards" class="cards"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+  <script src="library.js"></script>
+  <script src="render.js"></script>
+  <script src="visual-engines.js"></script>
+  <script src="transcribers.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

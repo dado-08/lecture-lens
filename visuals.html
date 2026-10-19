@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visual Aids · Lecture Lens</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+</head>
+<body class="visuals-page">
+  <header class="topbar">
+    <div class="topbar-title"><strong id="subject">Visual aids</strong></div>
+    <span class="muted small">Updates live from the transcript window</span>
+  </header>
+  <main class="visuals-only">
+    <p id="waiting" class="muted">Waiting for the main Lecture Lens window…</p>
+    <div id="cards" class="cards"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+  <script src="render.js"></script>
+  <script>
+    (function () {
+      const cards = document.getElementById("cards");
+      const waiting = document.getElementById("waiting");
+
+      window.addEventListener("message", (event) => {
+        if (!window.opener || event.source !== window.opener) return; // only trust the main window
+        const msg = event.data || {};
+        if (msg.type === "init") {
+          waiting.remove();
+          document.getElementById("subject").textContent = msg.subject + " · Visual aids";
+          document.title = msg.subject + " · Visual Aids";
+          cards.replaceChildren();
+          (msg.cards || []).forEach((c) => cards.prepend(renderCard(c)));
+        } else if (msg.type === "card") {
+          cards.prepend(renderCard(msg.card));
+        }
+      });
+
+      if (window.opener) window.opener.postMessage({ type: "hello" }, "*");
+      else waiting.textContent = "Open this page using the “Open visuals page” button in Lecture Lens.";
+    })();
+  </script>
+</body>
+</html>
