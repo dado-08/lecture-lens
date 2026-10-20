@@ -125,14 +125,14 @@
     state.subject = $("subject").value.trim();
     state.topic = $("topic").value.trim();
     state.keyTerms = $("keyterms").value.split(",").map((s) => s.trim()).filter(Boolean);
-    state.language = $("language").value;
+    state.language = $("language").value.split("#")[0]; // "en-US#chinese" → "en-US" (no special browser model)
     const stt = document.querySelector('input[name="stt"]:checked')?.value;
     const vis = document.querySelector('input[name="vis"]:checked')?.value;
     if (!state.subject || !stt) return;
 
     try {
       localStorage.setItem("lecture-lens-setup", JSON.stringify({
-        subject: state.subject, keyTerms: $("keyterms").value, language: state.language,
+        subject: state.subject, keyTerms: $("keyterms").value, language: $("language").value,
       }));
     } catch { /* storage unavailable */ }
 
