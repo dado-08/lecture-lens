@@ -48,6 +48,11 @@
         : "This browser has no built-in speech recognition. Please open this page in Google Chrome or Microsoft Edge.";
       document.querySelector('input[name="stt"][value="browser"]').disabled = true;
       if (paid.scribe) document.querySelector('input[name="stt"][value="scribe"]').checked = true;
+    } else if (BrowserTranscriber.isSafari()) {
+      const warn = $("setup-warning");
+      warn.hidden = false;
+      warn.textContent = "Tip: Safari's speech recognition often stops and skips words. " +
+        "For full sentences, open this page in Google Chrome or Microsoft Edge.";
     }
   }
 

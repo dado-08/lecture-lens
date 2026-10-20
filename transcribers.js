@@ -13,12 +13,27 @@
       return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
     }
 
+    static isSafari() {
+      return /^((?!chrome|chromium|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent);
+    }
+
     constructor({ language, onPartial, onFinal, onStatus }) {
       this.language = language;
       this.onPartial = onPartial;
       this.onFinal = onFinal;
       this.onStatus = onStatus;
       this.running = false;
+      this.safari = BrowserTranscriber.isSafari();
+    }
+
+    // Words heard but not yet marked final. Safari often never finalises them and
+    // throws them away when it stops, so we keep them and commit them ourselves.
+    flushPending() {
+      clearTimeout(this.pauseTimer);
+      const text = (this.pending || "").trim();
+      this.pending = "";
+      this.onPartial("");
+      if (text) this.onFinal(text);
     }
 
     start() {
@@ -29,19 +44,39 @@
       rec.interimResults = true;
       rec.maxAlternatives = 1;
 
+      let emitted = new Set(); // result indexes already committed in this recognition session
+      this.pending = "";
+
+      rec.onstart = () => { emitted = new Set(); };
       rec.onresult = (event) => {
         let interim = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        // Scan every result: Safari doesn't always report resultIndex correctly.
+        for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
-          if (result.isFinal) this.onFinal(result[0].transcript.trim());
-          else interim += result[0].transcript;
+          if (result.isFinal) {
+            if (!emitted.has(i)) {
+              emitted.add(i);
+              this.pending = "";
+              this.onFinal(result[0].transcript.trim());
+            }
+          } else {
+            interim += result[0].transcript;
+          }
         }
+        this.pending = interim;
         this.onPartial(interim.trim());
+
+        // Safari: after a 2-second pause, lock in what was heard (stop → onend commits it → restart).
+        if (this.safari) {
+          clearTimeout(this.pauseTimer);
+          if (interim.trim()) this.pauseTimer = setTimeout(() => { try { rec.stop(); } catch { /* already stopping */ } }, 2000);
+        }
       };
       rec.onerror = (event) => {
         if (event.error === "no-speech" || event.error === "aborted") return; // harmless, it restarts
         if (event.error === "not-allowed" || event.error === "service-not-allowed") {
           this.running = false;
+          this.blocked = true;
           this.onStatus("Microphone permission was blocked. Allow it in the address bar and try again.", "error");
         } else if (event.error === "network") {
           this.onStatus("Browser speech recognition needs an internet connection.", "error");
@@ -49,25 +84,30 @@
           this.onStatus("Speech recognition error: " + event.error, "error");
         }
       };
-      // Chrome stops listening after a pause; restart automatically while running.
+      // Browsers stop listening after a pause; keep any unfinished words, then restart right away.
       rec.onend = () => {
+        this.flushPending();
         if (this.running) {
-          try { rec.start(); } catch { /* already starting */ }
-        } else {
+          try {
+            rec.start();
+          } catch {
+            setTimeout(() => { if (this.running) try { rec.start(); } catch { /* gave up this cycle */ } }, 250);
+          }
+        } else if (!this.blocked) {
           this.onStatus("Paused", "idle");
         }
       };
 
       this.rec = rec;
       this.running = true;
+      this.blocked = false;
       rec.start();
       this.onStatus("Listening (free browser engine)", "live");
     }
 
     stop() {
       this.running = false;
-      this.rec?.stop();
-      this.onPartial("");
+      this.rec?.stop(); // onend commits any unfinished words
     }
   }
 
